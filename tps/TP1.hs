@@ -30,11 +30,12 @@ main = do
 
 -- | Write a negation function over Bool: 'neg'
 neg :: Bool -> Bool
-neg _ = undefined
+neg True = False
+neg False = True
 
 -- | Write the conjunction function over Bool: 'and'
 and :: Bool -> Bool -> Bool
-and _ _ = undefined
+and b1 b2 = b1 && b2
 
 -- | A function stating a property of 'neg' and 'and'
 propNegAnd :: Bool -> Bool
@@ -42,39 +43,47 @@ propNegAnd b = neg (and b (neg b))
 
 -- | Write a function computing the length of a list
 length :: [a] -> Int
-length _ = undefined
+length [] = 0
+length (_:xs) = 1 + length xs
 
 -- | write a function that states a property of 'length', for any input
 -- list.
 propLength :: [a] -> Bool
-propLength _ = undefined
+propLength xs = length xs >= 0
 
 -- | Write a function taking the first 'n' elements of a list. The function
 -- should be total.
 take :: Int -> [a] -> [a]
-take _ _ = undefined
+take n _ | n <= 0 = []
+take _ [] = []
+take n (x:xs) = x:take (n-1) xs
 
 -- | Write a function taking the suffix of a list, after the first 'n' elements.
 drop :: Int -> [a] -> [a]
-drop _ _ = undefined
+drop _ [] = []
+drop n (x:xs) | n > 0 = drop (n-1) xs
+              | otherwise = x:drop 0 xs
 
 -- | Write a recursive function that sums the elements of a list
 sumRec :: [Int] -> Int
-sumRec _ = undefined
+sumRec [] = 0
+sumRec (x:xs) = x + sumRec xs
 
 -- | Write a non-recursive function that sums the elements of a list, using
 -- the foldr function: https://hoogle.haskell.org/?hoogle=foldr
 sumFold :: [Int] -> Int
-sumFold _ = undefined
+sumFold xs = foldr (+) 0 xs
 
 -- | Write a function stating a relation between 'sumRec' and 'sumFold'
 propSumRecSumFold :: [Int] -> Bool
-propSumRecSumFold _ = undefined
+propSumRecSumFold xs = sumRec xs == sumFold xs
 
 -- | Write the fmap instance for 'Maybe'
 fmapMaybe :: (a -> b) -> (Maybe a) -> (Maybe b)
-fmapMaybe _f = undefined
+fmapMaybe _ Nothing = Nothing
+fmapMaybe f (Just x) = Just (f x)
 
 -- | Write the map instance for 'List'. Don't use the standard library's 'map' function
 fmapMaybeList :: (a -> b) -> [a] -> [b]
-fmapMaybeList = undefined
+fmapMaybeList _ [] = []
+fmapMaybeList f (x:xs) = (f x):fmapMaybeList f xs
