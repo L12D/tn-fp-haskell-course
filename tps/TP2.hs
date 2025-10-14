@@ -15,6 +15,18 @@ main :: IO ()
 main = do
   putStrLn "TP2 is running"
 
+  -- let card = mkCard "knight"
+  -- putStrLn (show card)
+  -- let newCard = takeDamage 1 card
+  -- putStrLn (show newCard)
+
+  let deck = mkDeck (Just Knight) Nothing Nothing
+  putStrLn (show deck)
+
+  -- let board = mkBoard
+  -- putStrLn (show board)
+
+
 -- If you don't like this TP, you can do TP3 instead.
 
 -- Implement a card game a la Magic the Gathering. Each player
@@ -67,3 +79,125 @@ main = do
 -- https://hackage.haskell.org/package/random-1.2.1/docs/System-Random.html#t:StdGen
 --
 -- Use https://hoogle.haskell.org/ to find the functions you need
+
+
+
+data CardKind = Knight | Soldier
+
+
+instance Show CardKind where
+  show Knight = "Knight            "
+  show Soldier = "Soldier          "
+
+
+data Card = MkCard {
+  name :: CardKind,
+  healthPoints :: Int,
+  attackPoints :: Int
+}
+
+
+showCardName :: Card -> String
+showCardName card = show (name card)
+
+
+showCardInfo :: Card -> String
+showCardInfo card = "(HP: " ++ show (healthPoints card) ++ ", ATK: " ++ show (attackPoints card) ++ ")   "
+
+
+mkCard :: CardKind -> Card
+mkCard Knight = MkCard { name = Knight, healthPoints = 2, attackPoints = 2}
+mkCard Soldier = MkCard { name = Soldier, healthPoints = 1, attackPoints = 1}
+
+
+mkMaybeCard :: Maybe CardKind -> Maybe Card
+mkMaybeCard (ck :: Maybe CardKind) = fmap mkCard ck 
+
+
+takeDamage :: Int -> Card -> Card
+takeDamage n card = card { healthPoints = healthPoints card - n }
+
+
+attack :: Card -> Card -> Maybe Card
+attack card1 card2 = result where
+  result
+    | hp > 0 = Just damagedCard
+    | otherwise = Nothing
+    where
+      damagedCard = takeDamage (attackPoints card1) card2
+      hp = healthPoints damagedCard
+
+
+data Deck = MkDeck {
+  card1 :: Maybe Card,
+  card2 :: Maybe Card,
+  card3 :: Maybe Card
+}
+
+
+instance Show Deck where
+  show deck = "card 1            card 2            card 3\n" ++ showMaybeCardName (card1 deck) ++ showMaybeCardName (card2 deck) ++ showMaybeCardName (card3 deck) ++ "\n"  ++ showMaybeCardInfo (card1 deck) ++ showMaybeCardInfo (card2 deck) ++ showMaybeCardInfo (card3 deck)
+    where
+      showMaybeCardName Nothing = "Empty             "
+      showMaybeCardName (Just card) = showCardName card
+      showMaybeCardInfo Nothing = "                  "
+      showMaybeCardInfo (Just card) = showCardInfo card
+
+
+mkDeck :: (Maybe CardKind) -> (Maybe CardKind) -> (Maybe CardKind) -> Deck
+mkDeck ck1 ck2 ck3 = MkDeck (mkMaybeCard ck1) (mkMaybeCard ck2) (mkMaybeCard ck3)
+
+
+data Board = MkBoard {
+  nPoints_p1 :: Int,
+  deck_p1 :: Deck,
+  nPoints_p2 :: Int,
+  deck_p2 :: Deck
+}
+
+
+mkBoard :: Board
+mkBoard = MkBoard { nPoints_p1 = 0, deck_p1 = mkDeck Nothing Nothing Nothing , nPoints_p2 = 0, deck_p2 = mkDeck Nothing Nothing Nothing }
+
+
+instance Show Board where
+  show board = "========\nplayer 1\npoints: " ++ show (nPoints_p1 board) ++ "\n" ++ show (deck_p1 board) ++ "\n\nplayer 2\npoints: "++ show (nPoints_p2 board) ++ "\n" ++ show (deck_p2 board)
+
+
+getUserMoves :: Deck -> IO Deck
+getUserMoves deck = do
+  action1 <- case deck.card1 of
+    Nothing -> do
+      putStrLn "Enter your move for the card number 1, you can either do nothing ('nothing'), place a knight ('knight'), or place a soldier ('soldier')"
+      getLine
+    _ -> do
+      return "nothing"
+  action2 <- case deck.card2 of
+    Nothing -> do
+      putStrLn "Enter your move for the card number 2, you can either do nothing ('nothing'), place a knight ('knight'), or place a soldier ('soldier')"
+      getLine
+    _ -> do
+      return "nothing"
+  action3 <- case deck.card3 of
+    Nothing -> do
+      putStrLn "Enter your move for the card number 3, you can either do nothing ('nothing'), place a knight ('knight'), or place a soldier ('soldier')"
+      getLine
+    _ -> do
+      return "nothing"
+  return deck {
+    card1 = if action1 == "nothing" then deck.card1 else if action1 == "knight" then Just (mkCard Knight)    else if action1 == "soldier" then Just (mkCard Soldier) else undefined,
+    card2 = if action2 == "nothing" then deck.card2 else if action2 == "knight" then Just (mkCard Knight)    else if action2 == "soldier" then Just (mkCard Soldier) else undefined,
+    card3 = if action3 == "nothing" then deck.card3 else if action3 == "knight" then Just (mkCard Knight)    else if action3 == "soldier" then Just (mkCard Soldier) else undefined
+  }
+
+
+attack :: Board -> Int -> Board
+attack _ player | (player < 1) || (player > 2) = undefined
+attack board 1 = undefined
+attack board 2 = undefined
+
+
+oneTurn :: Board -> IO Board
+oneTurn board player = do
+  deck1 <- getUserMoves board.deck1
+  undefined
