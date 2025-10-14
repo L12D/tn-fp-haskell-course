@@ -10,10 +10,15 @@ import Debug.Trace
 import GHC.Generics
 import Generic.Random
 import Test.QuickCheck
+import Data.Char (isAscii, isSpace)
+import Data.List.Split (splitOn)
+import Data.Graph (path)
 
 main :: IO ()
 main = do
   putStrLn "TP3 is running"
+  let url = "https://github.com/dmjio/miso/pulls"
+  putStrLn (show (parseUrl url))
 
 -- 1/ Define a type representing URLs you can enter in a browser address bar,
 --    i.e. strings of the form:
@@ -38,3 +43,77 @@ main = do
 --
 -- Use https://hoogle.haskell.org/ to find the functions you need, for example splitOn:
 -- https://hackage.haskell.org/package/split-0.2.5/docs/Data-List-Split.html#v:splitOn
+
+
+data Protocol = Http | Https deriving Show
+data Extension = Fr | Com deriving Show
+type Segments = [String]
+
+
+data Url = MkUrl {
+  protocol :: Protocol,
+  domain :: String,
+  extension :: Extension,
+  segments :: Segments
+} deriving Show
+
+
+data Err = ParsingErr | BadProtocol | NonAsciiCharInDomain | BadExtension | NonAsciiOrSpaceCharInAccessPath deriving Show
+
+
+splitUrl :: String -> Either Err (String, String, String, String)
+splitUrl input = 
+  case splitOn "://" input of
+    [protocolPart, rest] -> 
+      case splitOn "/" rest of
+        [] -> Left ParsingErr
+        (domainAndExt:pathParts) ->
+          case splitOn "." domainAndExt of
+            [domain, ext] -> Right (protocolPart, domain, ext, concat $ map ("/" ++) pathParts)
+            _ -> Left ParsingErr
+    _ -> Left ParsingErr
+
+
+checkProtocol :: String -> Either Err Protocol
+checkProtocol "http" = Right Http
+checkProtocol "https" = Right Https
+checkProtocol _ = Left BadProtocol
+
+
+checkDomain :: String -> Either Err String
+checkDomain domain | all isAscii domain = Right domain
+                   | otherwise = Left NonAsciiCharInDomain
+
+
+checkExtension :: String -> Either Err Extension
+checkExtension "fr" = Right Fr
+checkExtension "com" = Right Com
+checkExtension _ = Left BadExtension
+
+
+checkIndividualSegments :: Segments -> Either Err Segments
+checkIndividualSegments [] = Right []
+checkIndividualSegments (seg:segments) 
+  | all (\c -> isAscii c && not (isSpace c)) seg =
+    case checkIndividualSegments segments of
+      Right segments -> Right (seg:segments)
+      Left err -> Left err
+  | otherwise = Left NonAsciiOrSpaceCharInAccessPath
+
+
+checkSegments :: String -> Either Err Segments
+checkSegments "" = Right []
+checkSegments "/" = Right []
+checkSegments path = do 
+  segments <- Right $ filter (not . null) $ splitOn "/" path
+  checkIndividualSegments segments
+
+
+parseUrl :: String -> Either Err Url
+parseUrl url = do
+  (prot, dom, ext, path) <- splitUrl url
+  protocol <- checkProtocol prot
+  domain <- checkDomain dom
+  extension <- checkExtension ext
+  segments <- checkSegments path
+  Right (MkUrl protocol domain extension segments)
